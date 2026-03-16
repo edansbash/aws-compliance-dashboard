@@ -235,6 +235,7 @@ async def test_slack_notification(db: AsyncSession = Depends(get_db)):
 class JiraConfigResponse(BaseModel):
     """Response model for JIRA configuration (read-only, from environment)."""
     configured: bool  # True if all required env vars are set
+    is_enabled: bool  # Same as configured - for frontend compatibility
     base_url: Optional[str] = None
     email: Optional[str] = None
     api_token_configured: bool = False
@@ -259,9 +260,11 @@ async def get_jira_config_endpoint():
     - JIRA_ASSIGNEE_EMAIL (optional)
     """
     config = get_jira_config_from_env()
+    configured = is_jira_configured()
 
     return JiraConfigResponse(
-        configured=is_jira_configured(),
+        configured=configured,
+        is_enabled=configured,  # JIRA is "enabled" when it's fully configured
         base_url=config["base_url"],
         email=config["email"],
         api_token_configured=bool(config["api_token"]),
