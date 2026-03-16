@@ -34,6 +34,7 @@ async def list_findings(
     account_id: Optional[str] = None,
     region: Optional[str] = None,
     rule_id: Optional[UUID] = None,
+    search: Optional[str] = None,
     page: int = 1,
     per_page: int = 20,
     db: AsyncSession = Depends(get_db),
@@ -53,6 +54,14 @@ async def list_findings(
         conditions.append(Finding.region == region)
     if rule_id:
         conditions.append(Finding.rule_id == rule_id)
+    if search:
+        search_pattern = f"%{search}%"
+        conditions.append(
+            or_(
+                Finding.resource_name.ilike(search_pattern),
+                Finding.resource_id.ilike(search_pattern),
+            )
+        )
 
     query = (
         select(Finding)
