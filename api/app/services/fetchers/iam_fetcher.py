@@ -244,6 +244,15 @@ class IAMResourceFetcher(ResourceFetcher):
                     except ClientError:
                         pass
 
+                    # Get role tags
+                    tags = {}
+                    try:
+                        tags_response = iam.list_role_tags(RoleName=role_name)
+                        for tag in tags_response.get("Tags", []):
+                            tags[tag["Key"]] = tag["Value"]
+                    except ClientError:
+                        pass
+
                     attributes = {
                         "role_name": role_name,
                         "role_id": role.get("RoleId"),
@@ -256,6 +265,7 @@ class IAMResourceFetcher(ResourceFetcher):
                         "inline_policy_count": len(inline_policies),
                         "attached_policies": attached_policies,
                         "attached_policy_count": len(attached_policies),
+                        "tags": tags,
                     }
 
                     resource = FetchedResource(

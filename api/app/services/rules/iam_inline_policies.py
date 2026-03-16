@@ -303,7 +303,7 @@ class IAMRoleInlinePolicyExistsRule(ComplianceRule, InlinePolicyCheckMixin):
     name = "IAM Role Inline Policies"
     description = "Ensures IAM roles do not have inline policies attached (use managed policies instead)"
     resource_type = "AWS::IAM::Role"
-    severity = Severity.MEDIUM
+    severity = Severity.LOW
     has_remediation = False
 
     async def evaluate(self, session, region: str) -> List[RuleResult]:
@@ -335,6 +335,15 @@ class IAMRoleInlinePolicyExistsRule(ComplianceRule, InlinePolicyCheckMixin):
                     attached_response = iam.list_attached_role_policies(RoleName=role_name)
                     attached_policies = [p["PolicyName"] for p in attached_response.get("AttachedPolicies", [])]
 
+                    # Fetch role tags
+                    tags = {}
+                    try:
+                        tags_response = iam.list_role_tags(RoleName=role_name)
+                        for tag in tags_response.get("Tags", []):
+                            tags[tag["Key"]] = tag["Value"]
+                    except ClientError:
+                        pass
+
                     results.append(RuleResult(
                         resource_id=role_arn,
                         resource_name=role_name,
@@ -345,6 +354,7 @@ class IAMRoleInlinePolicyExistsRule(ComplianceRule, InlinePolicyCheckMixin):
                             "inline_policy_count": len(inline_policies),
                             "inline_policies": inline_policies,
                             "attached_managed_policies": attached_policies,
+                            "tags": tags,
                             "message": f"Role has {len(inline_policies)} inline policy(ies) attached" if not is_compliant else "No inline policies attached"
                         }
                     ))
@@ -408,6 +418,15 @@ class IAMRoleInlinePolicyAssumeRoleRule(ComplianceRule, InlinePolicyCheckMixin):
                     if inline_policies:
                         is_compliant = len(violating_policies) == 0
 
+                        # Fetch role tags
+                        tags = {}
+                        try:
+                            tags_response = iam.list_role_tags(RoleName=role_name)
+                            for tag in tags_response.get("Tags", []):
+                                tags[tag["Key"]] = tag["Value"]
+                        except ClientError:
+                            pass
+
                         results.append(RuleResult(
                             resource_id=role_arn,
                             resource_name=role_name,
@@ -416,6 +435,7 @@ class IAMRoleInlinePolicyAssumeRoleRule(ComplianceRule, InlinePolicyCheckMixin):
                                 "role_name": role_name,
                                 "inline_policy_count": len(inline_policies),
                                 "violating_policies": violating_policies,
+                                "tags": tags,
                                 "message": f"Role has {len(violating_policies)} inline policy(ies) allowing sts:AssumeRole on all resources" if not is_compliant else "No inline policies allow sts:AssumeRole on all resources"
                             }
                         ))
@@ -479,6 +499,15 @@ class IAMRoleInlinePolicyPassRoleRule(ComplianceRule, InlinePolicyCheckMixin):
                     if inline_policies:
                         is_compliant = len(violating_policies) == 0
 
+                        # Fetch role tags
+                        tags = {}
+                        try:
+                            tags_response = iam.list_role_tags(RoleName=role_name)
+                            for tag in tags_response.get("Tags", []):
+                                tags[tag["Key"]] = tag["Value"]
+                        except ClientError:
+                            pass
+
                         results.append(RuleResult(
                             resource_id=role_arn,
                             resource_name=role_name,
@@ -487,6 +516,7 @@ class IAMRoleInlinePolicyPassRoleRule(ComplianceRule, InlinePolicyCheckMixin):
                                 "role_name": role_name,
                                 "inline_policy_count": len(inline_policies),
                                 "violating_policies": violating_policies,
+                                "tags": tags,
                                 "message": f"Role has {len(violating_policies)} inline policy(ies) allowing iam:PassRole on all resources" if not is_compliant else "No inline policies allow iam:PassRole on all resources"
                             }
                         ))
@@ -550,6 +580,15 @@ class IAMRoleInlinePolicyNotActionRule(ComplianceRule, InlinePolicyCheckMixin):
                     if inline_policies:
                         is_compliant = len(violating_policies) == 0
 
+                        # Fetch role tags
+                        tags = {}
+                        try:
+                            tags_response = iam.list_role_tags(RoleName=role_name)
+                            for tag in tags_response.get("Tags", []):
+                                tags[tag["Key"]] = tag["Value"]
+                        except ClientError:
+                            pass
+
                         results.append(RuleResult(
                             resource_id=role_arn,
                             resource_name=role_name,
@@ -558,6 +597,7 @@ class IAMRoleInlinePolicyNotActionRule(ComplianceRule, InlinePolicyCheckMixin):
                                 "role_name": role_name,
                                 "inline_policy_count": len(inline_policies),
                                 "violating_policies": violating_policies,
+                                "tags": tags,
                                 "message": f"Role has {len(violating_policies)} inline policy(ies) using NotAction with Allow" if not is_compliant else "No inline policies use NotAction with Allow"
                             }
                         ))
