@@ -1,5 +1,6 @@
 """Slack notification service for compliance findings."""
 import logging
+import os
 from typing import List, Optional
 import httpx
 from sqlalchemy import select
@@ -293,8 +294,9 @@ async def send_slack_notification(
     This is a convenience function that loads config and sends the notification.
     """
     config = await get_slack_config()
+    webhook_url = os.environ.get("SLACK_WEBHOOK_URL")
 
-    if not config or not config.is_enabled or not config.webhook_url:
+    if not config or not config.is_enabled or not webhook_url:
         return False
 
     # Check if this notification type is enabled
@@ -304,7 +306,7 @@ async def send_slack_notification(
         return False
 
     notifier = SlackNotifier(
-        webhook_url=config.webhook_url,
+        webhook_url=webhook_url,
         min_severity=config.min_severity
     )
 

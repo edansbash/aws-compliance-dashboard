@@ -1,4 +1,5 @@
 """Scanner service for executing compliance scans with optimized resource fetching."""
+import os
 from datetime import datetime
 from typing import Optional, Dict, List, Callable, Awaitable, Any
 from uuid import UUID
@@ -755,13 +756,14 @@ async def send_finding_notifications(
 
     # Get Slack config
     config = await get_slack_config()
+    webhook_url = os.environ.get("SLACK_WEBHOOK_URL")
 
-    if not config or not config.is_enabled or not config.webhook_url:
+    if not config or not config.is_enabled or not webhook_url:
         logger.debug("Slack notifications not configured or disabled")
         return
 
     notifier = SlackNotifier(
-        webhook_url=config.webhook_url,
+        webhook_url=webhook_url,
         min_severity=config.min_severity
     )
 
