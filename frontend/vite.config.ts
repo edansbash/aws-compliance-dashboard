@@ -7,4 +7,7 @@ export default defineConfig({
     port: 3000,
     host: true,
   },
+  define: {
+    'import.meta.env.VITE_DISPLAY_TIMEZONE': JSON.stringify(process.env.VITE_DISPLAY_TIMEZONE || ''),
+  },
 })

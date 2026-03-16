@@ -20,14 +20,27 @@ const getFormatOptions = (options: Intl.DateTimeFormatOptions = {}): Intl.DateTi
 };
 
 /**
+ * Parse a date string as UTC if it doesn't have a timezone indicator.
+ * Database dates are stored in UTC but may be returned without the 'Z' suffix.
+ */
+const parseAsUTC = (dateStr: string): Date => {
+  // If string already has timezone info (Z, +, or -), parse as-is
+  if (/[Z+-]/.test(dateStr.slice(-6))) {
+    return new Date(dateStr);
+  }
+  // Otherwise, append Z to treat as UTC
+  return new Date(dateStr + 'Z');
+};
+
+/**
  * Format a date string or Date object as full date + time.
  * Example: "1/15/2024, 2:30:45 PM EST"
  */
 export const formatDateTime = (dateInput: string | Date | null | undefined): string => {
   if (!dateInput) return '-';
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  const date = typeof dateInput === 'string' ? parseAsUTC(dateInput) : dateInput;
   if (isNaN(date.getTime())) return '-';
-  return date.toLocaleString('en-US', getFormatOptions());
+  return date.toLocaleString('en-US', getFormatOptions({ timeZoneName: 'short' }));
 };
 
 /**
@@ -36,7 +49,7 @@ export const formatDateTime = (dateInput: string | Date | null | undefined): str
  */
 export const formatDate = (dateInput: string | Date | null | undefined): string => {
   if (!dateInput) return '-';
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  const date = typeof dateInput === 'string' ? parseAsUTC(dateInput) : dateInput;
   if (isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('en-US', getFormatOptions());
 };
@@ -47,7 +60,7 @@ export const formatDate = (dateInput: string | Date | null | undefined): string 
  */
 export const formatTime = (dateInput: string | Date | null | undefined): string => {
   if (!dateInput) return '-';
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  const date = typeof dateInput === 'string' ? parseAsUTC(dateInput) : dateInput;
   if (isNaN(date.getTime())) return '-';
   return date.toLocaleTimeString('en-US', getFormatOptions({
     hour: '2-digit',
@@ -61,7 +74,7 @@ export const formatTime = (dateInput: string | Date | null | undefined): string 
  */
 export const formatTimeAgo = (dateInput: string | Date | null | undefined): string => {
   if (!dateInput) return '-';
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  const date = typeof dateInput === 'string' ? parseAsUTC(dateInput) : dateInput;
   if (isNaN(date.getTime())) return '-';
 
   const now = new Date();
