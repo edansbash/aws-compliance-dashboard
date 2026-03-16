@@ -536,6 +536,13 @@ export default function FindingDetail() {
                   className="w-full border rounded-lg px-3 py-2 h-24"
                   placeholder="Add notes about remediation progress..."
                 />
+                <button
+                  onClick={() => updateWorkflow.mutate(finding.workflow_status)}
+                  disabled={updateWorkflow.isPending || (!notes && !finding.workflow_notes)}
+                  className="mt-2 w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {updateWorkflow.isPending ? 'Saving...' : 'Save Notes'}
+                </button>
               </div>
               {finding.workflow_updated_at && (
                 <div className="text-sm text-gray-500">
