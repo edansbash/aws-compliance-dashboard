@@ -8,6 +8,7 @@ import {
   getIaCConfig, getIaCSummary, getIaCSyncs, getIaCFindings, triggerIaCSync
 } from '../services/api'
 import { clsx } from 'clsx'
+import { formatDateTime, formatDate, formatTimeAgo } from '../utils/dateTime'
 
 const SEVERITY_COLORS: Record<string, string> = {
   CRITICAL: 'bg-red-100 text-red-800 border-red-200',
@@ -95,20 +96,7 @@ export default function IaC() {
     }
   }
 
-  const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMins / 60)
-    const diffDays = Math.floor(diffHours / 24)
-
-    if (diffMins < 1) return 'just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-    if (diffHours < 24) return `${diffHours}h ago`
-    return `${diffDays}d ago`
-  }
-
+  
   if (!config?.configured) {
     return (
       <div className="flex flex-col items-center justify-center h-96">
@@ -197,7 +185,7 @@ export default function IaC() {
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* Summary Cards */}
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-5 gap-4">
             <div className="bg-white rounded-lg shadow p-4">
               <div className="text-sm text-gray-500 mb-1">Open Alerts</div>
               <div className="text-3xl font-bold">{summary?.by_state?.open || 0}</div>
@@ -213,6 +201,10 @@ export default function IaC() {
             <div className="bg-white rounded-lg shadow p-4 border-l-4 border-yellow-500">
               <div className="text-sm text-gray-500 mb-1">Medium</div>
               <div className="text-3xl font-bold text-yellow-600">{summary?.by_severity?.MEDIUM || 0}</div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+              <div className="text-sm text-gray-500 mb-1">Low</div>
+              <div className="text-3xl font-bold text-blue-600">{summary?.by_severity?.LOW || 0}</div>
             </div>
           </div>
 
@@ -258,7 +250,7 @@ export default function IaC() {
                       </div>
                     </div>
                     <div className="text-xs text-gray-500">
-                      {new Date(sync.completed_at || sync.started_at).toLocaleString()}
+                      {formatDateTime(sync.completed_at || sync.started_at)}
                     </div>
                   </div>
                 ))
@@ -356,10 +348,10 @@ export default function IaC() {
                       {sync.commit_sha?.slice(0, 7) || '-'}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      {sync.started_at ? new Date(sync.started_at).toLocaleString() : '-'}
+                      {formatDateTime(sync.started_at)}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      {sync.completed_at ? new Date(sync.completed_at).toLocaleString() : '-'}
+                      {formatDateTime(sync.completed_at)}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       {sync.status === 'COMPLETED' ? (
@@ -498,7 +490,7 @@ export default function IaC() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">
-                        {new Date(finding.first_detected_at).toLocaleDateString()}
+                        {formatDate(finding.first_detected_at)}
                       </td>
                       <td className="px-4 py-3">
                         <a

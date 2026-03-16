@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, RefreshCw, ShieldOff, Wrench, X, Loader2, Play, CheckCircle, ExternalLink, Ticket } from 'lucide-react'
+import { formatDateTime } from '../utils/dateTime'
 import { getFinding, updateFindingWorkflow, rescanFinding, createException, previewRemediation, createRemediationJob, getJiraConfig, createJiraTicketForFinding } from '../services/api'
 import { useState, useEffect } from 'react'
 import { clsx } from 'clsx'
@@ -456,7 +457,7 @@ export default function FindingDetail() {
               </div>
               <div>
                 <dt className="text-sm text-gray-500">Discovered</dt>
-                <dd className="font-medium">{new Date(finding.created_at).toLocaleString()}</dd>
+                <dd className="font-medium">{formatDateTime(finding.created_at)}</dd>
               </div>
               {finding.jira_ticket_key && jiraConfig?.data?.base_url && (
                 <div>
@@ -538,7 +539,7 @@ export default function FindingDetail() {
               </div>
               {finding.workflow_updated_at && (
                 <div className="text-sm text-gray-500">
-                  Last updated: {new Date(finding.workflow_updated_at).toLocaleString()}
+                  Last updated: {formatDateTime(finding.workflow_updated_at)}
                   {finding.workflow_updated_by && ` by ${finding.workflow_updated_by}`}
                 </div>
               )}

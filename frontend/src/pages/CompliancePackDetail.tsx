@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { ArrowLeft, Plus, X, Search, ExternalLink, Play, Loader2, Filter } from 'lucide-react'
 import { getCompliancePack, getRules, addRuleToCompliancePack, removeRuleFromCompliancePack, updateCompliancePack, updateRule, scanRule } from '../services/api'
 import { clsx } from 'clsx'
+import { formatDate } from '../utils/dateTime'
 
 const severityColors: Record<string, string> = {
   CRITICAL: 'bg-red-100 text-red-800',
@@ -181,7 +182,7 @@ export default function CompliancePackDetail() {
                   {pack.rules?.length || 0} rules
                 </span>
                 <span className="text-sm text-gray-500">
-                  Created {new Date(pack.created_at).toLocaleDateString()}
+                  Created {formatDate(pack.created_at)}
                 </span>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AlertTriangle, CheckCircle, XCircle, Clock, Play, Server, Building2, Box, Shield } from 'lucide-react'
 import { getFindingsSummary, getScans, createScan, getAccounts, getRules } from '../services/api'
 import { useState } from 'react'
+import { formatDate, formatTime } from '../utils/dateTime'
 
 export default function Dashboard() {
   const [isScanning, setIsScanning] = useState(false)
@@ -278,9 +279,9 @@ export default function Dashboard() {
                     )}
                     <div className="flex flex-col min-w-0">
                       <span className="text-sm font-medium">
-                        {new Date(scan.created_at).toLocaleDateString()}{' '}
+                        {formatDate(scan.created_at)}{' '}
                         <span className="text-gray-400 font-normal">
-                          {new Date(scan.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {formatTime(scan.created_at)}
                         </span>
                       </span>
                       <div className="flex items-center gap-2 text-xs text-gray-500">

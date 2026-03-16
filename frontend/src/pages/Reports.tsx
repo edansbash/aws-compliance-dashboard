@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { FileText, Download, Trash2, FileSpreadsheet, Loader2 } from 'lucide-react'
 import { clsx } from 'clsx'
+import { formatDateTime } from '../utils/dateTime'
 import {
   getReports,
   getScans,
@@ -163,7 +164,7 @@ export default function Reports() {
               <option value="">All Scans (Latest Data)</option>
               {scans?.data?.items?.map((scan: any) => (
                 <option key={scan.id} value={scan.id}>
-                  {new Date(scan.created_at).toLocaleString()} - {scan.status}
+                  {formatDateTime(scan.created_at)} - {scan.status}
                 </option>
               ))}
             </select>
@@ -332,7 +333,7 @@ export default function Reports() {
                     {report.file_size ? `${(report.file_size / 1024).toFixed(1)} KB` : '-'}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    {new Date(report.created_at).toLocaleString()}
+                    {formatDateTime(report.created_at)}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">

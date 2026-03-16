@@ -7,6 +7,7 @@ services:
       - "3000:3000"
     environment:
       - VITE_API_URL=http://localhost:8000
+      - VITE_DISPLAY_TIMEZONE=${VITE_DISPLAY_TIMEZONE:-}
     depends_on:
       - api
     volumes:

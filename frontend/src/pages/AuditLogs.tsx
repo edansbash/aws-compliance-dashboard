@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Download } from 'lucide-react'
 import { getAuditLogs, exportAuditLogsCsv } from '../services/api'
+import { formatDateTime, getISODateForFilename } from '../utils/dateTime'
 
 const ACTION_COLORS: Record<string, string> = {
   SCAN_STARTED: 'bg-blue-100 text-blue-800',
@@ -36,7 +37,7 @@ export default function AuditLogs() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`
+      a.download = `audit-logs-${getISODateForFilename()}.csv`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
@@ -141,7 +142,7 @@ export default function AuditLogs() {
               logs.map((log: any) => (
                 <tr key={log.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm">
-                    {new Date(log.created_at).toLocaleString()}
+                    {formatDateTime(log.created_at)}
                   </td>
                   <td className="px-4 py-3">
                     <span

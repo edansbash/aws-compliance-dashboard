@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect, useRef } from 'react'
 import { Eye, CheckCircle, XCircle, Clock, Loader2, FlaskConical, AlertTriangle } from 'lucide-react'
+import { formatDateTime } from '../utils/dateTime'
 import {
   getRemediationJobs,
   getAvailableRemediations,
@@ -343,14 +344,10 @@ export default function Remediation() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {job.started_at
-                      ? new Date(job.started_at).toLocaleString()
-                      : '-'}
+                    {formatDateTime(job.started_at)}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {job.completed_at
-                      ? new Date(job.completed_at).toLocaleString()
-                      : '-'}
+                    {formatDateTime(job.completed_at)}
                   </td>
                   <td className="px-4 py-3">
                     <button

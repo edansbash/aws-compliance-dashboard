@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useState } from 'react'
 import { Trash2, Filter, X, Pencil } from 'lucide-react'
 import { getExceptions, deleteException, updateException, bulkUpdateExceptions, getAccounts, getRules } from '../services/api'
+import { formatDate, extractDateForInput } from '../utils/dateTime'
 
 export default function Exceptions() {
   const queryClient = useQueryClient()
@@ -116,7 +117,7 @@ export default function Exceptions() {
     setEditingException(exc)
     setEditForm({
       justification: exc.justification,
-      expires_at: exc.expires_at ? exc.expires_at.split('T')[0] : '',
+      expires_at: extractDateForInput(exc.expires_at),
     })
   }
 
@@ -311,14 +312,10 @@ export default function Exceptions() {
                   </td>
                   <td className="px-4 py-3 text-sm">{exc.created_by}</td>
                   <td className="px-4 py-3 text-sm">
-                    {exc.created_at
-                      ? new Date(exc.created_at).toLocaleDateString()
-                      : '-'}
+                    {formatDate(exc.created_at)}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {exc.expires_at
-                      ? new Date(exc.expires_at).toLocaleDateString()
-                      : 'Never'}
+                    {exc.expires_at ? formatDate(exc.expires_at) : 'Never'}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">

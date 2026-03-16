@@ -10,6 +10,7 @@ import {
   deleteScheduledScan, runScheduledScan, enableScheduledScan, disableScheduledScan
 } from '../services/api'
 import { clsx } from 'clsx'
+import { formatDateTime } from '../utils/dateTime'
 
 const US_REGIONS = ['us-east-1', 'us-east-2', 'us-west-1', 'us-west-2']
 
@@ -490,14 +491,10 @@ export default function Scans() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      {scan.started_at
-                        ? new Date(scan.started_at).toLocaleString()
-                        : '-'}
+                      {formatDateTime(scan.started_at)}
                     </td>
                     <td className="px-4 py-3 text-sm">
-                      {scan.completed_at
-                        ? new Date(scan.completed_at).toLocaleString()
-                        : '-'}
+                      {formatDateTime(scan.completed_at)}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       {getAccountsDisplay(scan.account_ids)}
@@ -661,12 +658,12 @@ export default function Scans() {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       {schedule.last_run_at
-                        ? new Date(schedule.last_run_at).toLocaleString()
+                        ? formatDateTime(schedule.last_run_at)
                         : <span className="text-gray-400">Never</span>}
                     </td>
                     <td className="px-4 py-3 text-sm">
                       {schedule.enabled && schedule.next_run_at
-                        ? new Date(schedule.next_run_at).toLocaleString()
+                        ? formatDateTime(schedule.next_run_at)
                         : <span className="text-gray-400">-</span>}
                     </td>
                     <td className="px-4 py-3 text-sm">

@@ -6,6 +6,7 @@ import { ArrowLeft, ExternalLink, Filter, X, Wrench, Loader2, FileText, Search, 
 import { getFindings, getRule, getAccounts, getRegions, createRemediationJob, createBulkExceptions, scanRule, previewRemediation, getJiraConfig } from '../services/api'
 import { clsx } from 'clsx'
 import JsonDiff from '../components/JsonDiff'
+import { formatDateTime } from '../utils/dateTime'
 
 const severityColors: Record<string, string> = {
   CRITICAL: 'bg-red-100 text-red-800',
@@ -770,12 +771,7 @@ export default function RuleFindings() {
                   <td className="px-4 py-3 text-sm">{finding.account_id}</td>
                   <td className="px-4 py-3 text-sm">{finding.region}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">
-                    {finding.last_scanned_at
-                      ? new Date(finding.last_scanned_at).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })
-                      : '-'}
+                    {formatDateTime(finding.last_scanned_at)}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {finding.jira_ticket_key && jiraConfig?.data?.base_url ? (
