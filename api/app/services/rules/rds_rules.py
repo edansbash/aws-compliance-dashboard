@@ -109,7 +109,7 @@ class RDSInstanceSingleAZRule(ComplianceRule):
     name = "RDS Instance Single AZ"
     description = "Ensures RDS database instances are deployed in Multi-AZ configuration for high availability"
     resource_type = "AWS::RDS::DBInstance"
-    severity = Severity.MEDIUM
+    severity = Severity.LOW
     has_remediation = False
     supports_prefetch = True
 

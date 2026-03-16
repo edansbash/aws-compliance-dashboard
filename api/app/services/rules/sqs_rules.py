@@ -142,7 +142,7 @@ class SQSWorldGetQueueAttributesPolicyRule(SQSQueuePolicyBaseRule):
     description = "Ensures SQS queues do not allow public access for GetQueueAttributes action"
     action_patterns = ["sqs:GetQueueAttributes"]
     action_description = "GetQueueAttributes action"
-    severity = Severity.HIGH
+    severity = Severity.MEDIUM
 
 
 class SQSWorldChangeMessageVisibilityPolicyRule(SQSQueuePolicyBaseRule):

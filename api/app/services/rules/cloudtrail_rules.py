@@ -90,7 +90,7 @@ class CloudTrailNoCloudWatchLogsRule(ComplianceRule):
     name = "CloudTrail Not Integrated with CloudWatch Logs"
     description = "Ensures CloudTrail trails are configured to send logs to CloudWatch Logs for real-time monitoring and alerting"
     resource_type = "AWS::CloudTrail::Trail"
-    severity = Severity.MEDIUM
+    severity = Severity.HIGH
     has_remediation = False  # Requires CloudWatch log group setup
     supports_prefetch = True
 
@@ -190,7 +190,7 @@ class CloudTrailLogFileValidationDisabledRule(ComplianceRule):
     name = "CloudTrail Log File Validation Disabled"
     description = "Ensures CloudTrail trails have log file integrity validation enabled to detect tampering"
     resource_type = "AWS::CloudTrail::Trail"
-    severity = Severity.MEDIUM
+    severity = Severity.HIGH
     has_remediation = True
     supports_prefetch = True
 

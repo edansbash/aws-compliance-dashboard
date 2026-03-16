@@ -13,7 +13,7 @@ class KMSKeyRotationDisabledRule(ComplianceRule):
     name = "KMS Key Rotation Disabled"
     description = "Ensures KMS customer-managed keys have automatic key rotation enabled for security best practices"
     resource_type = "AWS::KMS::Key"
-    severity = Severity.MEDIUM
+    severity = Severity.HIGH
     has_remediation = True
     remediation_tested = True
     supports_prefetch = True

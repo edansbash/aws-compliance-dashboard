@@ -13,7 +13,7 @@ class ELBv2DeletionProtectionRule(ComplianceRule):
     name = "ELBv2 Deletion Protection Disabled"
     description = "Ensures Application and Network Load Balancers have deletion protection enabled to prevent accidental deletion"
     resource_type = "AWS::ElasticLoadBalancingV2::LoadBalancer"
-    severity = Severity.MEDIUM
+    severity = Severity.LOW
     has_remediation = True
     remediation_tested = True
     supports_prefetch = True

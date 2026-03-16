@@ -174,7 +174,7 @@ class SNSWorldSubscribeRule(SNSTopicPolicyRule):
     name = "SNS Topic World Subscribe"
     description = "Ensures SNS topic policies do not allow sns:Subscribe from anyone (Principal: *)"
     resource_type = "AWS::SNS::Topic"
-    severity = Severity.MEDIUM
+    severity = Severity.HIGH
     has_remediation = False
 
     target_action = "sns:Subscribe"
