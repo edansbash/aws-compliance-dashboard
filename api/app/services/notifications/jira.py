@@ -6,9 +6,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import httpx
-from sqlalchemy import select
-
-from app.database import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -1163,37 +1160,45 @@ class JiraNotifier:
 
 @dataclass
 class JiraConfigData:
-    """JIRA configuration data (from DB or env vars)."""
+    """JIRA configuration data (from environment variables only)."""
     base_url: Optional[str]
     email: Optional[str]
     api_token: Optional[str]
     project_key: Optional[str]
     issue_type: str
-    is_enabled: bool
-    min_severity: str
-    notify_on_new_findings: bool
-    notify_on_regression: bool
+    min_severity: str = "CRITICAL"
+    notify_on_new_findings: bool = True
+    notify_on_regression: bool = True
     assignee_email: Optional[str] = None
 
+    def is_configured(self) -> bool:
+        """Check if all required JIRA settings are configured."""
+        return all([self.base_url, self.email, self.api_token, self.project_key])
 
-def get_jira_config_from_env() -> Optional[JiraConfigData]:
-    """Get JIRA configuration from environment variables."""
-    base_url = os.environ.get("JIRA_BASE_URL")
-    email = os.environ.get("JIRA_EMAIL")
-    api_token = os.environ.get("JIRA_API_TOKEN")
-    project_key = os.environ.get("JIRA_PROJECT_KEY")
+    @property
+    def is_enabled(self) -> bool:
+        """JIRA is enabled if it's configured. No separate enable/disable setting."""
+        return self.is_configured()
 
-    # Only return env config if at least the base credentials are set
-    if not any([base_url, email, api_token, project_key]):
-        return None
 
+def get_jira_config_from_env() -> JiraConfigData:
+    """Get JIRA configuration from environment variables.
+
+    All JIRA configuration is now exclusively from environment variables:
+    - JIRA_BASE_URL: JIRA Cloud instance URL (e.g., https://yourcompany.atlassian.net)
+    - JIRA_EMAIL: JIRA account email
+    - JIRA_API_TOKEN: JIRA API token
+    - JIRA_PROJECT_KEY: JIRA project key for ticket creation
+    - JIRA_ISSUE_TYPE: Issue type name (default: "Bug")
+    - JIRA_MIN_SEVERITY: Minimum severity to create tickets for (default: "CRITICAL")
+    - JIRA_ASSIGNEE_EMAIL: Email of user to assign new tickets to (optional)
+    """
     return JiraConfigData(
-        base_url=base_url,
-        email=email,
-        api_token=api_token,
-        project_key=project_key,
+        base_url=os.environ.get("JIRA_BASE_URL"),
+        email=os.environ.get("JIRA_EMAIL"),
+        api_token=os.environ.get("JIRA_API_TOKEN"),
+        project_key=os.environ.get("JIRA_PROJECT_KEY"),
         issue_type=os.environ.get("JIRA_ISSUE_TYPE", "Bug"),
-        is_enabled=os.environ.get("JIRA_ENABLED", "false").lower() == "true",
         min_severity=os.environ.get("JIRA_MIN_SEVERITY", "CRITICAL"),
         notify_on_new_findings=os.environ.get("JIRA_NOTIFY_NEW", "true").lower() == "true",
         notify_on_regression=os.environ.get("JIRA_NOTIFY_REGRESSION", "true").lower() == "true",
@@ -1203,67 +1208,21 @@ def get_jira_config_from_env() -> Optional[JiraConfigData]:
 
 async def get_jira_config() -> Optional[JiraConfigData]:
     """
-    Get JIRA notification configuration.
+    Get JIRA notification configuration from environment variables.
 
-    Credentials (base_url, email, api_token, project_key, issue_type):
-      - Environment variables ALWAYS take precedence if set
-      - Falls back to database credentials only if env vars not configured
+    All JIRA settings are now configured exclusively via environment variables.
+    No database storage is used for JIRA configuration.
 
-    Runtime settings (is_enabled, min_severity, notify_on_*):
-      - Database takes precedence if an entry exists
-      - Falls back to environment variables otherwise
+    Returns:
+        JiraConfigData if JIRA is configured, None otherwise
     """
-    from app.models.jira_config import JiraConfig
+    config = get_jira_config_from_env()
 
-    # Get environment config first (credentials from env always take precedence)
-    env_config = get_jira_config_from_env()
+    if config.is_configured():
+        logger.info(f"Using JIRA config from environment: project={config.project_key}")
+        return config
 
-    # Check database for settings
-    async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(JiraConfig).where(JiraConfig.config_key == "jira")
-        )
-        db_config = result.scalar_one_or_none()
-
-        # Env credentials always take precedence if configured
-        if env_config and env_config.base_url:
-            if db_config:
-                # Env credentials + DB runtime settings
-                logger.info(f"Using JIRA credentials from env (override), settings from database: is_enabled={db_config.is_enabled}")
-                return JiraConfigData(
-                    base_url=env_config.base_url,
-                    email=env_config.email,
-                    api_token=env_config.api_token,
-                    project_key=env_config.project_key,
-                    issue_type=env_config.issue_type,
-                    is_enabled=db_config.is_enabled,
-                    min_severity=db_config.min_severity,
-                    notify_on_new_findings=db_config.notify_on_new_findings,
-                    notify_on_regression=db_config.notify_on_regression,
-                    assignee_email=env_config.assignee_email,
-                )
-            else:
-                # Pure env config
-                logger.info(f"Using JIRA config from environment: is_enabled={env_config.is_enabled}, project={env_config.project_key}")
-                return env_config
-
-        # Fall back to database credentials if env not configured
-        if db_config and db_config.base_url:
-            logger.info(f"Using JIRA config from database (no env override): is_enabled={db_config.is_enabled}, project={db_config.project_key}")
-            return JiraConfigData(
-                base_url=db_config.base_url,
-                email=db_config.email,
-                api_token=db_config.api_token,
-                project_key=db_config.project_key,
-                issue_type=db_config.issue_type or "Bug",
-                is_enabled=db_config.is_enabled,
-                min_severity=db_config.min_severity,
-                notify_on_new_findings=db_config.notify_on_new_findings,
-                notify_on_regression=db_config.notify_on_regression,
-                assignee_email=getattr(db_config, 'assignee_email', None),
-            )
-
-    logger.info("No JIRA configuration found in database or environment")
+    logger.info("JIRA not configured - set JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN, JIRA_PROJECT_KEY environment variables")
     return None
 
 

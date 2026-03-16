@@ -219,11 +219,11 @@ export const removeRuleFromCompliancePack = (packId: string, ruleId: string) =>
 
 export const deleteCompliancePack = (id: string) => api.delete(`/compliance-packs/${id}`)
 
-// Notifications
+// Notifications - Slack
+// Note: Webhook URL is configured via SLACK_WEBHOOK_URL environment variable
 export const getSlackConfig = () => api.get('/notifications/slack')
 
 export const updateSlackConfig = (data: {
-  webhook_url?: string
   is_enabled?: boolean
   min_severity?: string
   notify_on_new_findings?: boolean
@@ -233,20 +233,8 @@ export const updateSlackConfig = (data: {
 
 export const testSlackNotification = () => api.post('/notifications/slack/test')
 
-// JIRA Notifications
+// Notifications - JIRA (read-only, all config from environment variables)
 export const getJiraConfig = () => api.get('/notifications/jira')
-
-export const updateJiraConfig = (data: {
-  base_url?: string
-  email?: string
-  api_token?: string
-  project_key?: string
-  issue_type?: string
-  is_enabled?: boolean
-  min_severity?: string
-  notify_on_new_findings?: boolean
-  notify_on_regression?: boolean
-}) => api.put('/notifications/jira', data)
 
 export const testJiraConnection = () => api.post('/notifications/jira/test')
 
@@ -326,3 +314,34 @@ export const generateFindingsExcel = (params?: {
   severities?: string
   statuses?: string
 }) => api.post('/reports/generate/findings-excel', null, { params, responseType: 'blob' })
+
+// IaC (Infrastructure as Code)
+export const getIaCConfig = () => api.get('/iac/config')
+
+export const triggerIaCSync = () => api.post('/iac/sync')
+
+export const getIaCSyncs = (page = 1, perPage = 20) =>
+  api.get('/iac/syncs', { params: { page, per_page: perPage } })
+
+export const getIaCSync = (id: string) => api.get(`/iac/syncs/${id}`)
+
+export const getIaCFindings = (params?: {
+  state?: string
+  severity?: string
+  trivy_rule_id?: string
+  file_path?: string
+  page?: number
+  per_page?: number
+}) => api.get('/iac/findings', { params })
+
+export const getIaCFinding = (id: string) => api.get(`/iac/findings/${id}`)
+
+export const getIaCSummary = () => api.get('/iac/summary')
+
+// Integration settings
+export const getIntegrations = () => api.get('/integrations')
+
+export const getIntegration = (type: string) => api.get(`/integrations/${type}`)
+
+export const updateIntegration = (type: string, data: { is_enabled: boolean }) =>
+  api.put(`/integrations/${type}`, data)

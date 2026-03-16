@@ -8,9 +8,10 @@ from app.models.remediation import RemediationJob, RemediationLog
 from app.models.audit import AuditLog
 from app.models.compliance_pack import CompliancePack, compliance_pack_rules
 from app.models.notification_config import NotificationConfig
-from app.models.jira_config import JiraConfig
 from app.models.scheduled_scan import ScheduledScan
 from app.models.report import Report
+from app.models.iac import IaCSync, IaCFinding
+from app.models.integration import IntegrationSetting
 
 __all__ = [
     "Base",
@@ -25,7 +26,9 @@ __all__ = [
     "CompliancePack",
     "compliance_pack_rules",
     "NotificationConfig",
-    "JiraConfig",
     "ScheduledScan",
     "Report",
+    "IaCSync",
+    "IaCFinding",
+    "IntegrationSetting",
 ]

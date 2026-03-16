@@ -12,6 +12,7 @@ import {
   Package,
   Settings,
   FileText,
+  FileCode2,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 
@@ -29,8 +30,9 @@ const navigation = [
   { name: 'Remediation', href: '/remediation', icon: Wrench },
   { name: 'Audit Logs', href: '/audit-logs', icon: ClipboardList },
   { name: 'Reports', href: '/reports', icon: FileText },
+  { name: 'IaC', href: '/iac', icon: FileCode2 },
   { name: 'Accounts', href: '/accounts', icon: Building2 },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Integrations', href: '/integrations', icon: Settings },
 ]
 
 export default function Layout({ children }: LayoutProps) {

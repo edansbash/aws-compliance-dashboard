@@ -14,6 +14,7 @@ import AuditLogs from './pages/AuditLogs'
 import Remediation from './pages/Remediation'
 import Settings from './pages/Settings'
 import Reports from './pages/Reports'
+import IaC from './pages/IaC'
 
 function App() {
   return (
@@ -31,8 +32,9 @@ function App() {
         <Route path="/accounts" element={<Accounts />} />
         <Route path="/audit-logs" element={<AuditLogs />} />
         <Route path="/remediation" element={<Remediation />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/integrations" element={<Settings />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/iac" element={<IaC />} />
       </Routes>
     </Layout>
   )

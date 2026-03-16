@@ -14,6 +14,7 @@ A local Docker Compose application for scanning AWS resources across single or m
 - **Real-time Scan Updates** via Server-Sent Events (SSE) for live progress monitoring
 - **Slack Notifications** on scan completion with finding summaries
 - **JIRA Integration** for automatic ticket creation with AWS Security Hub custom fields
+- **IaC Scanning** via GitHub integration to sync Trivy/tfsec results from GitHub Code Scanning API
 - **Resource Tags** displayed in findings for Terraform-managed resources and other metadata
 - **Reports** for compliance report generation and export
 
@@ -277,6 +278,89 @@ Tickets include severity-based due dates (Critical: 15d, High: 30d, Medium: 60d,
 ### UI Integration
 
 JIRA ticket links displayed on Finding Detail page, Rule Findings table, and in Slack notifications.
+
+## IaC Scanning (GitHub Integration)
+
+Sync Trivy/tfsec security scan results from GitHub Code Scanning API to track infrastructure-as-code misconfigurations alongside runtime findings.
+
+> **Note**: IaC findings are tracked separately from runtime AWS findings and do not count toward the AWS compliance score.
+
+### Prerequisites
+
+1. **Trivy** running in your GitHub Actions workflow with SARIF output uploaded to GitHub Code Scanning
+2. **GitHub Code Scanning** enabled for your repository
+3. A **GitHub Personal Access Token** with `security_events:read` permission
+
+### Setup
+
+1. Generate a Personal Access Token at https://github.com/settings/tokens with `security_events:read` scope
+2. Add to `.env`:
+   ```env
+   GITHUB_TOKEN=ghp_your_personal_access_token
+   IAC_GITHUB_OWNER=YourOrg
+   IAC_GITHUB_REPO=your-iac-repo
+   IAC_GITHUB_BRANCH=main
+   ```
+3. Restart: `docker compose up -d --build`
+4. Navigate to **Settings** and enable the IaC integration
+
+### Example GitHub Actions Workflow
+
+```yaml
+name: Trivy IaC Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+```
+
+### Syncing Findings
+
+IaC findings are synced manually:
+
+1. Navigate to **Settings** → **IaC Scanning**
+2. Click **Trigger Manual Sync**
+3. View findings on the **IaC** page
+
+### IaC Finding States
+
+| State | Description |
+|-------|-------------|
+| Open | Active security issue in the codebase |
+| Fixed | Issue was resolved (code changed) |
+| Dismissed | Alert dismissed in GitHub (false positive, won't fix, etc.) |
+
+### What's Synced
+
+Each IaC finding includes:
+- File path and line number
+- Severity (Critical, High, Medium, Low)
+- Rule ID and description
+- Link to GitHub alert
+- Trivy rule documentation link
+- Fixed/dismissed timestamps
 
 ## License
 

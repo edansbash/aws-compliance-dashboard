@@ -1,7 +1,12 @@
-"""Notification configuration model for Slack and other integrations."""
+"""Notification configuration model for Slack integration.
+
+Note: Connection credentials (webhook URLs, API tokens) are configured via
+environment variables. This table only stores UI-configurable preferences
+like minimum severity and notification triggers.
+"""
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Boolean, DateTime, Text
+from sqlalchemy import String, Boolean, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -9,7 +14,11 @@ from app.database import Base
 
 
 class NotificationConfig(Base):
-    """Notification configuration for Slack integration."""
+    """Notification configuration for Slack integration.
+
+    Stores UI-configurable settings only. The actual webhook URL
+    is configured via SLACK_WEBHOOK_URL environment variable.
+    """
 
     __tablename__ = "notification_configs"
 
@@ -19,8 +28,7 @@ class NotificationConfig(Base):
     # Use a key to identify config type (e.g., "slack")
     config_key: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 
-    # Slack-specific fields
-    webhook_url: Mapped[str] = mapped_column(Text, nullable=True)
+    # UI-configurable settings
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     min_severity: Mapped[str] = mapped_column(String(20), default="CRITICAL")
 

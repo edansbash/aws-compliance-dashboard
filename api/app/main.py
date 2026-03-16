@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.routers import accounts, scans, findings, rules, exceptions, remediation, audit_logs, config, compliance_packs, notifications, schedules, reports
+from app.routers import accounts, scans, findings, rules, exceptions, remediation, audit_logs, config, compliance_packs, notifications, schedules, reports, iac, integrations
 from app.routers.health import router as health_router
 from app.database import engine
 from app import models
@@ -39,6 +39,8 @@ app.include_router(compliance_packs.router, prefix="/api/v1/compliance-packs", t
 app.include_router(notifications.router, prefix="/api/v1/notifications", tags=["Notifications"])
 app.include_router(schedules.router, prefix="/api/v1/schedules", tags=["Schedules"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
+app.include_router(iac.router, prefix="/api/v1/iac", tags=["IaC"])
+app.include_router(integrations.router, prefix="/api/v1/integrations", tags=["Integrations"])
 
 
 @app.on_event("startup")
