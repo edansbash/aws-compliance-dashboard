@@ -7,7 +7,7 @@ from uuid import UUID
 from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
 from app.services.github import GitHubService, CodeScanningAlert
 from app.services.iac_config import IaCConfig
@@ -68,6 +68,11 @@ class IaCSyncService:
         await self.db.refresh(sync)
 
         try:
+            # Clear all existing findings - each sync is a full refresh of the configured branch
+            # This ensures branch switches show correct data
+            await self.db.execute(delete(IaCFinding))
+            await self.db.commit()
+
             if progress_callback:
                 progress_callback(
                     "Fetching alerts from GitHub...",
