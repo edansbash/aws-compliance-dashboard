@@ -325,9 +325,14 @@ async def execute_scan(
                                             existing_finding.status = status
                                             existing_finding.details = serialize_for_json(result.details)
                                             existing_finding.last_scanned_at = datetime.utcnow()
-                                            # Reset workflow status if status changed from PASS to FAIL (regression)
+                                            # Update workflow status based on status changes
                                             if old_status != "FAIL" and status == "FAIL":
+                                                # Regression: was passing/exception, now failing
                                                 existing_finding.workflow_status = "OPEN"
+                                                existing_finding.workflow_updated_at = datetime.utcnow()
+                                            elif status == "EXCEPTION" and existing_finding.workflow_status != "IGNORED":
+                                                # Exception applied: set to IGNORED
+                                                existing_finding.workflow_status = "IGNORED"
                                                 existing_finding.workflow_updated_at = datetime.utcnow()
                                                 # Track regression for notification
                                                 regression_findings_for_notification.append({
@@ -362,6 +367,17 @@ async def execute_scan(
                                                         logger.warning(f"Failed to close JIRA ticket for fixed resource: {jira_error}")
                                         else:
                                             # Create new finding
+                                            # Set workflow_status based on status:
+                                            # - PASS → RESOLVED
+                                            # - EXCEPTION → IGNORED
+                                            # - FAIL → OPEN
+                                            if status == "PASS":
+                                                workflow_status = "RESOLVED"
+                                            elif status == "EXCEPTION":
+                                                workflow_status = "IGNORED"
+                                            else:
+                                                workflow_status = "OPEN"
+
                                             finding = Finding(
                                                 scan_id=scan.id,
                                                 rule_id=rule.id,
@@ -371,7 +387,7 @@ async def execute_scan(
                                                 account_id=account_id,
                                                 region=region,
                                                 status=status,
-                                                workflow_status="OPEN",
+                                                workflow_status=workflow_status,
                                                 details=serialize_for_json(result.details),
                                                 last_scanned_at=datetime.utcnow(),
                                             )

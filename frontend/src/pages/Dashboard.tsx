@@ -344,6 +344,7 @@ export default function Dashboard() {
                   <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Findings</th>
                   <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Compliant</th>
                   <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Non-Compliant</th>
+                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Ignored</th>
                   <th className="text-right px-4 py-3 text-sm font-medium text-red-500">Critical</th>
                   <th className="text-right px-4 py-3 text-sm font-medium text-orange-500">High</th>
                   <th className="text-right px-4 py-3 text-sm font-medium text-yellow-600">Medium</th>
@@ -366,6 +367,7 @@ export default function Dashboard() {
                       <td className="px-4 py-3 text-right font-medium">{data.total}</td>
                       <td className="px-4 py-3 text-right text-green-600">{data.passing}</td>
                       <td className="px-4 py-3 text-right text-red-600">{data.failing}</td>
+                      <td className="px-4 py-3 text-right text-orange-400">{data.ignored || 0}</td>
                       <td className="px-4 py-3 text-right">
                         <span className={data.failing_by_severity?.CRITICAL > 0 ? 'text-red-600 font-semibold' : 'text-gray-400'}>
                           {data.failing_by_severity?.CRITICAL || 0}
@@ -404,6 +406,7 @@ export default function Dashboard() {
                   const totalFindings = accounts.reduce((sum, d) => sum + d.total, 0)
                   const totalPassing = accounts.reduce((sum, d) => sum + d.passing, 0)
                   const totalFailing = accounts.reduce((sum, d) => sum + d.failing, 0)
+                  const totalIgnored = accounts.reduce((sum, d) => sum + (d.ignored || 0), 0)
                   const totalCritical = accounts.reduce((sum, d) => sum + (d.failing_by_severity?.CRITICAL || 0), 0)
                   const totalHigh = accounts.reduce((sum, d) => sum + (d.failing_by_severity?.HIGH || 0), 0)
                   const totalMedium = accounts.reduce((sum, d) => sum + (d.failing_by_severity?.MEDIUM || 0), 0)
@@ -416,6 +419,7 @@ export default function Dashboard() {
                       <td className="px-4 py-3 text-right">{totalFindings}</td>
                       <td className="px-4 py-3 text-right text-green-600">{totalPassing}</td>
                       <td className="px-4 py-3 text-right text-red-600">{totalFailing}</td>
+                      <td className="px-4 py-3 text-right text-orange-400">{totalIgnored}</td>
                       <td className="px-4 py-3 text-right">
                         <span className={totalCritical > 0 ? 'text-red-600' : 'text-gray-400'}>{totalCritical}</span>
                       </td>
@@ -448,7 +452,7 @@ export default function Dashboard() {
       {/* Workflow Status */}
       <div className="mt-6 bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold mb-4">Findings by Workflow Status</h2>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-6 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-600">
               {summaryData.by_workflow_status?.OPEN || 0}
@@ -478,6 +482,12 @@ export default function Dashboard() {
               {summaryData.by_workflow_status?.RESOLVED || 0}
             </div>
             <div className="text-sm text-gray-500">Resolved</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-orange-400">
+              {summaryData.by_workflow_status?.IGNORED || 0}
+            </div>
+            <div className="text-sm text-gray-500">Ignored</div>
           </div>
         </div>
       </div>
