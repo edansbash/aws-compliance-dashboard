@@ -132,6 +132,21 @@ class RDSInstanceSingleAZRule(ComplianceRule):
 
             multi_az = attrs.get("multi_az", False)
             availability_zone = attrs.get("availability_zone", "")
+            db_cluster_identifier = attrs.get("db_cluster_identifier")
+
+            # Aurora clusters inherently have multi-AZ data protection at the storage layer
+            # (data is automatically replicated across 3 AZs), so they should pass this check
+            is_aurora_instance = db_cluster_identifier is not None
+
+            if is_aurora_instance:
+                is_compliant = True
+                message = f"Aurora cluster instance (cluster: {db_cluster_identifier}) has inherent multi-AZ data protection at the storage layer"
+            elif multi_az:
+                is_compliant = True
+                message = "RDS instance is deployed in Multi-AZ configuration"
+            else:
+                is_compliant = False
+                message = "RDS instance is deployed in a single AZ without high availability"
 
             # Preserve all resource attributes (including tags) and add compliance-specific fields
             details = dict(attrs)
@@ -139,13 +154,15 @@ class RDSInstanceSingleAZRule(ComplianceRule):
                 "multi_az": multi_az,
                 "availability_zone": availability_zone,
                 "secondary_availability_zone": attrs.get("secondary_availability_zone") if multi_az else None,
-                "message": "RDS instance is deployed in Multi-AZ configuration" if multi_az else "RDS instance is deployed in a single AZ without high availability"
+                "is_aurora_instance": is_aurora_instance,
+                "db_cluster_identifier": db_cluster_identifier,
+                "message": message
             })
 
             results.append(RuleResult(
                 resource_id=resource.resource_id,
                 resource_name=db_instance_id,
-                status="PASS" if multi_az else "FAIL",
+                status="PASS" if is_compliant else "FAIL",
                 details=details
             ))
 
