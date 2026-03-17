@@ -330,9 +330,9 @@ async def execute_scan(
                                                 # Regression: was passing/exception, now failing
                                                 existing_finding.workflow_status = "OPEN"
                                                 existing_finding.workflow_updated_at = datetime.utcnow()
-                                            elif status == "EXCEPTION" and existing_finding.workflow_status != "IGNORED":
-                                                # Exception applied: set to IGNORED
-                                                existing_finding.workflow_status = "IGNORED"
+                                            elif status == "EXCEPTION" and existing_finding.workflow_status != "RESOLVED":
+                                                # Exception applied: set to RESOLVED
+                                                existing_finding.workflow_status = "RESOLVED"
                                                 existing_finding.workflow_updated_at = datetime.utcnow()
                                                 # Track regression for notification
                                                 regression_findings_for_notification.append({
@@ -369,12 +369,12 @@ async def execute_scan(
                                             # Create new finding
                                             # Set workflow_status based on status:
                                             # - PASS → RESOLVED
-                                            # - EXCEPTION → IGNORED
+                                            # - EXCEPTION → RESOLVED (formally exempted)
                                             # - FAIL → OPEN
                                             if status == "PASS":
                                                 workflow_status = "RESOLVED"
                                             elif status == "EXCEPTION":
-                                                workflow_status = "IGNORED"
+                                                workflow_status = "RESOLVED"
                                             else:
                                                 workflow_status = "OPEN"
 

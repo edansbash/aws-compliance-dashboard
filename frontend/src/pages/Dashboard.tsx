@@ -337,25 +337,29 @@ export default function Dashboard() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Account</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Resources</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Findings</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Compliant</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Non-Compliant</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Ignored</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-red-500">Critical</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-orange-500">High</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-yellow-600">Medium</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-blue-500">Low</th>
-                  <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Compliance</th>
+              <thead className="bg-gray-50">
+                <tr className="border-b">
+                  <th rowSpan={2} className="text-left px-4 py-2 text-sm font-medium text-gray-500 align-bottom">Account</th>
+                  <th rowSpan={2} className="text-right px-4 py-2 text-sm font-medium text-gray-500 align-bottom">Resources</th>
+                  <th rowSpan={2} className="text-right px-4 py-2 text-sm font-medium text-gray-500 align-bottom border-r">Findings</th>
+                  <th colSpan={3} className="text-center px-4 py-2 text-sm font-semibold text-gray-700 border-r bg-gray-100">Status</th>
+                  <th colSpan={4} className="text-center px-4 py-2 text-sm font-semibold text-gray-700 border-r bg-gray-100">Non-Compliant by Severity</th>
+                  <th rowSpan={2} className="text-right px-4 py-2 text-sm font-medium text-gray-500 align-bottom">Score</th>
+                </tr>
+                <tr className="border-b">
+                  <th className="text-right px-4 py-2 text-sm font-medium text-green-600 bg-green-50">Compliant</th>
+                  <th className="text-right px-4 py-2 text-sm font-medium text-red-600 bg-red-50">Non-Compliant</th>
+                  <th className="text-right px-4 py-2 text-sm font-medium text-purple-600 bg-purple-50 border-r">Exception</th>
+                  <th className="text-right px-4 py-2 text-sm font-medium text-red-500">Critical</th>
+                  <th className="text-right px-4 py-2 text-sm font-medium text-orange-500">High</th>
+                  <th className="text-right px-4 py-2 text-sm font-medium text-yellow-600">Medium</th>
+                  <th className="text-right px-4 py-2 text-sm font-medium text-blue-500 border-r">Low</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {Object.entries(summaryData.by_account || {}).map(([accountId, data]: [string, any]) => {
                   const complianceRate = data.total > 0
-                    ? ((data.passing / data.total) * 100).toFixed(1)
+                    ? (((data.passing + (data.exceptions || 0)) / data.total) * 100).toFixed(1)
                     : '100.0'
                   return (
                     <tr key={accountId} className="hover:bg-gray-50">
@@ -364,10 +368,10 @@ export default function Dashboard() {
                         <div className="text-xs text-gray-400">{accountId}</div>
                       </td>
                       <td className="px-4 py-3 text-right text-gray-600">{data.resource_count || 0}</td>
-                      <td className="px-4 py-3 text-right font-medium">{data.total}</td>
-                      <td className="px-4 py-3 text-right text-green-600">{data.passing}</td>
-                      <td className="px-4 py-3 text-right text-red-600">{data.failing}</td>
-                      <td className="px-4 py-3 text-right text-orange-400">{data.ignored || 0}</td>
+                      <td className="px-4 py-3 text-right font-medium border-r">{data.total}</td>
+                      <td className="px-4 py-3 text-right text-green-600 bg-green-50/50">{data.passing}</td>
+                      <td className="px-4 py-3 text-right text-red-600 bg-red-50/50">{data.failing}</td>
+                      <td className="px-4 py-3 text-right text-purple-600 bg-purple-50/50 border-r">{data.exceptions || 0}</td>
                       <td className="px-4 py-3 text-right">
                         <span className={data.failing_by_severity?.CRITICAL > 0 ? 'text-red-600 font-semibold' : 'text-gray-400'}>
                           {data.failing_by_severity?.CRITICAL || 0}
@@ -383,7 +387,7 @@ export default function Dashboard() {
                           {data.failing_by_severity?.MEDIUM || 0}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right border-r">
                         <span className={data.failing_by_severity?.LOW > 0 ? 'text-blue-600 font-semibold' : 'text-gray-400'}>
                           {data.failing_by_severity?.LOW || 0}
                         </span>
@@ -406,20 +410,20 @@ export default function Dashboard() {
                   const totalFindings = accounts.reduce((sum, d) => sum + d.total, 0)
                   const totalPassing = accounts.reduce((sum, d) => sum + d.passing, 0)
                   const totalFailing = accounts.reduce((sum, d) => sum + d.failing, 0)
-                  const totalIgnored = accounts.reduce((sum, d) => sum + (d.ignored || 0), 0)
+                  const totalExceptions = accounts.reduce((sum, d) => sum + (d.exceptions || 0), 0)
                   const totalCritical = accounts.reduce((sum, d) => sum + (d.failing_by_severity?.CRITICAL || 0), 0)
                   const totalHigh = accounts.reduce((sum, d) => sum + (d.failing_by_severity?.HIGH || 0), 0)
                   const totalMedium = accounts.reduce((sum, d) => sum + (d.failing_by_severity?.MEDIUM || 0), 0)
                   const totalLow = accounts.reduce((sum, d) => sum + (d.failing_by_severity?.LOW || 0), 0)
-                  const overallCompliance = totalFindings > 0 ? ((totalPassing / totalFindings) * 100).toFixed(1) : '100.0'
+                  const overallCompliance = totalFindings > 0 ? (((totalPassing + totalExceptions) / totalFindings) * 100).toFixed(1) : '100.0'
                   return (
                     <tr className="bg-gray-50 font-semibold border-t-2">
                       <td className="px-4 py-3">Total</td>
                       <td className="px-4 py-3 text-right text-gray-600">{totalResources}</td>
-                      <td className="px-4 py-3 text-right">{totalFindings}</td>
-                      <td className="px-4 py-3 text-right text-green-600">{totalPassing}</td>
-                      <td className="px-4 py-3 text-right text-red-600">{totalFailing}</td>
-                      <td className="px-4 py-3 text-right text-orange-400">{totalIgnored}</td>
+                      <td className="px-4 py-3 text-right border-r">{totalFindings}</td>
+                      <td className="px-4 py-3 text-right text-green-600 bg-green-50/50">{totalPassing}</td>
+                      <td className="px-4 py-3 text-right text-red-600 bg-red-50/50">{totalFailing}</td>
+                      <td className="px-4 py-3 text-right text-purple-600 bg-purple-50/50 border-r">{totalExceptions}</td>
                       <td className="px-4 py-3 text-right">
                         <span className={totalCritical > 0 ? 'text-red-600' : 'text-gray-400'}>{totalCritical}</span>
                       </td>
@@ -429,7 +433,7 @@ export default function Dashboard() {
                       <td className="px-4 py-3 text-right">
                         <span className={totalMedium > 0 ? 'text-yellow-600' : 'text-gray-400'}>{totalMedium}</span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right border-r">
                         <span className={totalLow > 0 ? 'text-blue-600' : 'text-gray-400'}>{totalLow}</span>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -452,7 +456,7 @@ export default function Dashboard() {
       {/* Workflow Status */}
       <div className="mt-6 bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold mb-4">Findings by Workflow Status</h2>
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-600">
               {summaryData.by_workflow_status?.OPEN || 0}
@@ -482,12 +486,6 @@ export default function Dashboard() {
               {summaryData.by_workflow_status?.RESOLVED || 0}
             </div>
             <div className="text-sm text-gray-500">Resolved</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-400">
-              {summaryData.by_workflow_status?.IGNORED || 0}
-            </div>
-            <div className="text-sm text-gray-500">Ignored</div>
           </div>
         </div>
       </div>

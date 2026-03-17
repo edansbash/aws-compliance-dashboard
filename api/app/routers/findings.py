@@ -204,6 +204,7 @@ async def get_findings_summary(
                 "total": 0,
                 "passing": 0,
                 "failing": 0,
+                "exceptions": 0,
                 "resources": set(),
                 "by_severity": {},
                 "failing_by_severity": {},
@@ -218,6 +219,8 @@ async def get_findings_summary(
                 sev = f.rule.severity
                 by_account[f.account_id]["failing_by_severity"][sev] = \
                     by_account[f.account_id]["failing_by_severity"].get(sev, 0) + 1
+        elif f.status == "EXCEPTION":
+            by_account[f.account_id]["exceptions"] += 1
         if f.rule:
             sev = f.rule.severity
             by_account[f.account_id]["by_severity"][sev] = \
@@ -234,6 +237,7 @@ async def get_findings_summary(
             "total": data["total"],
             "passing": data["passing"],
             "failing": data["failing"],
+            "exceptions": data["exceptions"],
             "resource_count": len(data["resources"]),
             "by_severity": data["by_severity"],
             "failing_by_severity": data["failing_by_severity"],
