@@ -1,5 +1,6 @@
 """IAM inline policy compliance rules for Users, Roles, and Groups."""
-from typing import List, Callable, Any
+import json
+from typing import List, Dict, Any
 from botocore.exceptions import ClientError
 
 from app.services.rules.base import ComplianceRule, RuleResult, Severity
@@ -304,7 +305,22 @@ class IAMRoleInlinePolicyExistsRule(ComplianceRule, InlinePolicyCheckMixin):
     description = "Ensures IAM roles do not have inline policies attached (use managed policies instead)"
     resource_type = "AWS::IAM::Role"
     severity = Severity.LOW
-    has_remediation = False
+    has_remediation = True
+    remediation_tested = False  # TODO: Test remediation before production use
+
+    MANAGED_POLICY_PATH = "/migrated-from-inline/"
+
+    @staticmethod
+    def _normalize_policy_document(policy_doc: dict) -> str:
+        """Normalize policy document for comparison."""
+        return json.dumps(policy_doc, sort_keys=True)
+
+    @staticmethod
+    def _get_account_id_from_arn(arn: str) -> str:
+        """Extract account ID from ARN."""
+        # arn:aws:iam::123456789012:role/MyRole
+        parts = arn.split(":")
+        return parts[4] if len(parts) > 4 else ""
 
     async def evaluate(self, session, region: str) -> List[RuleResult]:
         """Evaluate IAM roles for inline policies."""
@@ -364,9 +380,78 @@ class IAMRoleInlinePolicyExistsRule(ComplianceRule, InlinePolicyCheckMixin):
 
         return results
 
+    async def remediate(self, session, resource_id: str, region: str, finding_details: dict = None) -> bool:
+        """Convert inline policies to managed policies.
+
+        For each inline policy:
+        1. Fetch the inline policy document
+        2. Create a managed policy (or reuse existing with same content)
+        3. Attach the managed policy to the role
+        4. Delete the inline policy
+        """
+        role_name = resource_id.split("/")[-1]
+        account_id = self._get_account_id_from_arn(resource_id)
+        iam = session.client("iam", region_name=region)
+
+        inline_policies = finding_details.get("inline_policies", []) if finding_details else []
+
+        if not inline_policies:
+            policies_response = iam.list_role_policies(RoleName=role_name)
+            inline_policies = policies_response.get("PolicyNames", [])
+
+        for inline_policy_name in inline_policies:
+            policy_response = iam.get_role_policy(RoleName=role_name, PolicyName=inline_policy_name)
+            policy_document = policy_response["PolicyDocument"]
+
+            managed_policy_name = inline_policy_name
+            managed_policy_arn = f"arn:aws:iam::{account_id}:policy{self.MANAGED_POLICY_PATH}{managed_policy_name}"
+
+            existing_policy_arn = None
+            try:
+                existing_policy = iam.get_policy(PolicyArn=managed_policy_arn)
+                existing_version = iam.get_policy_version(
+                    PolicyArn=managed_policy_arn,
+                    VersionId=existing_policy["Policy"]["DefaultVersionId"]
+                )
+                existing_doc = existing_version["PolicyVersion"]["Document"]
+
+                if self._normalize_policy_document(existing_doc) == self._normalize_policy_document(policy_document):
+                    existing_policy_arn = managed_policy_arn
+            except iam.exceptions.NoSuchEntityException:
+                pass
+
+            if existing_policy_arn:
+                policy_arn_to_attach = existing_policy_arn
+            else:
+                create_response = iam.create_policy(
+                    PolicyName=managed_policy_name,
+                    Path=self.MANAGED_POLICY_PATH,
+                    PolicyDocument=json.dumps(policy_document),
+                    Description=f"Migrated from inline policy '{inline_policy_name}' on role '{role_name}'"
+                )
+                policy_arn_to_attach = create_response["Policy"]["Arn"]
+
+            iam.attach_role_policy(RoleName=role_name, PolicyArn=policy_arn_to_attach)
+
+            iam.delete_role_policy(RoleName=role_name, PolicyName=inline_policy_name)
+
+        return True
+
     @classmethod
     def get_remediation_description(cls) -> str:
-        return "Convert inline policies to managed policies and attach them to the role"
+        return "Convert inline policies to managed policies under /migrated-from-inline/ path and attach them to the role"
+
+    @classmethod
+    def get_expected_state(cls, current_details: Dict[str, Any]) -> Dict[str, Any]:
+        inline_policies = current_details.get("inline_policies", [])
+        current_managed = current_details.get("attached_managed_policies", [])
+        return {
+            **current_details,
+            "inline_policy_count": 0,
+            "inline_policies": [],
+            "attached_managed_policies": current_managed + inline_policies,
+            "message": "No inline policies attached"
+        }
 
 
 class IAMRoleInlinePolicyAssumeRoleRule(ComplianceRule, InlinePolicyCheckMixin):

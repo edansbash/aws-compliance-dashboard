@@ -9,14 +9,18 @@ interface JsonDiffProps {
   className?: string
 }
 
-function formatJsonValue(value: any, indent: number = 0): string {
+function formatJsonValue(value: any): string {
   if (value === null) return 'null'
   if (value === undefined) return 'undefined'
   if (typeof value === 'string') return `"${value}"`
   if (typeof value === 'boolean' || typeof value === 'number') return String(value)
   if (Array.isArray(value)) {
     if (value.length === 0) return '[]'
-    return JSON.stringify(value, null, 2)
+    const items = value.map(item => {
+      if (typeof item === 'string') return `"${item}"`
+      return JSON.stringify(item, null, 2)
+    })
+    return `[\n  ${items.join(',\n  ')}\n]`
   }
   if (typeof value === 'object') {
     const keys = Object.keys(value)
@@ -24,6 +28,44 @@ function formatJsonValue(value: any, indent: number = 0): string {
     return JSON.stringify(value, null, 2)
   }
   return String(value)
+}
+
+function formatArrayItem(item: any): string {
+  if (typeof item === 'string') return `"${item}"`
+  return JSON.stringify(item, null, 2)
+}
+
+interface ArrayDiffResult {
+  added: any[]
+  removed: any[]
+  unchanged: any[]
+}
+
+function computeArrayDiff(oldArr: any[], newArr: any[]): ArrayDiffResult {
+  const oldSet = new Set(oldArr.map(item => JSON.stringify(item)))
+  const newSet = new Set(newArr.map(item => JSON.stringify(item)))
+
+  const added: any[] = []
+  const removed: any[] = []
+  const unchanged: any[] = []
+
+  for (const item of oldArr) {
+    const key = JSON.stringify(item)
+    if (newSet.has(key)) {
+      unchanged.push(item)
+    } else {
+      removed.push(item)
+    }
+  }
+
+  for (const item of newArr) {
+    const key = JSON.stringify(item)
+    if (!oldSet.has(key)) {
+      added.push(item)
+    }
+  }
+
+  return { added, removed, unchanged }
 }
 
 // Fields to exclude from diff display (internal/metadata fields)
@@ -163,27 +205,53 @@ export default function JsonDiff({ before, after, className = '' }: JsonDiffProp
             </div>
             {change.type === 'added' && (
               <div className="mt-1 font-mono text-xs">
-                <span className="inline-block bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                <pre className="inline-block bg-green-100 text-green-800 px-2 py-0.5 rounded whitespace-pre-wrap">
                   + {formatJsonValue(change.newValue)}
-                </span>
+                </pre>
               </div>
             )}
             {change.type === 'removed' && (
               <div className="mt-1 font-mono text-xs">
-                <span className="inline-block bg-red-100 text-red-800 px-2 py-0.5 rounded line-through">
+                <pre className="inline-block bg-red-100 text-red-800 px-2 py-0.5 rounded line-through whitespace-pre-wrap">
                   {formatJsonValue(change.oldValue)}
-                </span>
+                </pre>
               </div>
             )}
-            {change.type === 'changed' && (
-              <div className="mt-1 font-mono text-xs flex items-center gap-2 flex-wrap">
-                <span className="inline-block bg-red-100 text-red-700 px-2 py-0.5 rounded">
+            {change.type === 'changed' && Array.isArray(change.oldValue) && Array.isArray(change.newValue) && (
+              <div className="mt-1 font-mono text-xs">
+                {(() => {
+                  const diff = computeArrayDiff(change.oldValue, change.newValue)
+                  return (
+                    <div className="space-y-0.5">
+                      {diff.unchanged.map((item, i) => (
+                        <div key={`u-${i}`} className="text-gray-500 pl-4">
+                          {formatArrayItem(item)}
+                        </div>
+                      ))}
+                      {diff.removed.map((item, i) => (
+                        <div key={`r-${i}`} className="text-red-600 line-through">
+                          <span className="inline-block w-4">-</span>{formatArrayItem(item)}
+                        </div>
+                      ))}
+                      {diff.added.map((item, i) => (
+                        <div key={`a-${i}`} className="text-green-600">
+                          <span className="inline-block w-4">+</span>{formatArrayItem(item)}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
+            {change.type === 'changed' && !(Array.isArray(change.oldValue) && Array.isArray(change.newValue)) && (
+              <div className="mt-1 font-mono text-xs flex items-start gap-2 flex-wrap">
+                <pre className="inline-block bg-red-100 text-red-700 px-2 py-0.5 rounded whitespace-pre-wrap">
                   {formatJsonValue(change.oldValue)}
-                </span>
-                <span className="text-gray-400">→</span>
-                <span className="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                </pre>
+                <span className="text-gray-400 mt-1">→</span>
+                <pre className="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded whitespace-pre-wrap">
                   {formatJsonValue(change.newValue)}
-                </span>
+                </pre>
               </div>
             )}
           </div>
