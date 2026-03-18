@@ -425,6 +425,7 @@ export default function Settings() {
                 <li>JIRA_API_TOKEN</li>
                 <li>JIRA_PROJECT_KEY</li>
                 <li>JIRA_ISSUE_TYPE (optional)</li>
+                <li>JIRA_MIN_SEVERITY (optional, default: CRITICAL)</li>
                 <li>JIRA_ASSIGNEE_EMAIL (optional)</li>
               </ul>
             </div>
@@ -465,6 +466,16 @@ export default function Settings() {
                   <div>
                     <span className="text-sm text-gray-500">Issue Type:</span>
                     <span className="ml-2 font-mono text-gray-900">{jiraConfig.data.issue_type}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Min Severity:</span>
+                    <span className="ml-2 font-mono text-gray-900">{jiraConfig.data.min_severity || 'CRITICAL'}</span>
+                    <span className="ml-2 text-xs text-gray-500">(tickets created for {jiraConfig.data.min_severity || 'CRITICAL'} and above)</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -555,7 +566,8 @@ export default function Settings() {
 JIRA_EMAIL=your-email@company.com
 JIRA_API_TOKEN=your-api-token
 JIRA_PROJECT_KEY=SEC
-JIRA_ISSUE_TYPE=Bug`}
+JIRA_ISSUE_TYPE=Bug
+JIRA_MIN_SEVERITY=HIGH  # Options: CRITICAL, HIGH, MEDIUM, LOW, INFO`}
         </pre>
         <p className="text-sm text-blue-800 mt-2">
           Then restart the application with <code className="bg-blue-100 px-1 rounded">docker-compose up -d --build</code>

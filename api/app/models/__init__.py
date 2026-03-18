@@ -7,7 +7,6 @@ from app.models.exception import Exception as ComplianceException
 from app.models.remediation import RemediationJob, RemediationLog
 from app.models.audit import AuditLog
 from app.models.compliance_pack import CompliancePack, compliance_pack_rules
-from app.models.notification_config import NotificationConfig
 from app.models.scheduled_scan import ScheduledScan
 from app.models.report import Report
 from app.models.iac import IaCSync, IaCFinding
@@ -25,7 +24,6 @@ __all__ = [
     "AuditLog",
     "CompliancePack",
     "compliance_pack_rules",
-    "NotificationConfig",
     "ScheduledScan",
     "Report",
     "IaCSync",

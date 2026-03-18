@@ -3,10 +3,7 @@ import logging
 import os
 from typing import List, Optional
 import httpx
-from sqlalchemy import select
 
-from app.database import AsyncSessionLocal
-from app.models.notification_config import NotificationConfig
 from app.models.rule import Severity
 
 logger = logging.getLogger(__name__)
@@ -267,15 +264,6 @@ class SlackNotifier:
             return False
 
 
-async def get_slack_config() -> Optional[NotificationConfig]:
-    """Get Slack notification configuration from database."""
-    async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(NotificationConfig).where(NotificationConfig.config_key == "slack")
-        )
-        return result.scalar_one_or_none()
-
-
 async def send_slack_notification(
     finding_type: str,
     rule_name: str,
@@ -292,11 +280,13 @@ async def send_slack_notification(
     Send a Slack notification for a finding if configured.
 
     This is a convenience function that loads config and sends the notification.
+    Uses the unified integration config service.
     """
-    config = await get_slack_config()
-    webhook_url = os.environ.get("SLACK_WEBHOOK_URL")
+    from app.services.integration_config import get_slack_config
 
-    if not config or not config.is_enabled or not webhook_url:
+    config = await get_slack_config()
+
+    if not config.is_enabled or not config.is_configured:
         return False
 
     # Check if this notification type is enabled
@@ -306,7 +296,7 @@ async def send_slack_notification(
         return False
 
     notifier = SlackNotifier(
-        webhook_url=webhook_url,
+        webhook_url=config.webhook_url,
         min_severity=config.min_severity
     )
 

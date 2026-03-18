@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Search, Filter, ExternalLink, X } from 'lucide-react'
-import { getFindings, getAccounts, getRegions } from '../services/api'
+import { getFindings, getAccounts, getRegions, getJiraConfig } from '../services/api'
 import { clsx } from 'clsx'
 
 const severityColors: Record<string, string> = {
@@ -77,6 +77,11 @@ export default function Findings() {
   const { data: regionsData } = useQuery({
     queryKey: ['regions'],
     queryFn: () => getRegions(),
+  })
+
+  const { data: jiraConfig } = useQuery({
+    queryKey: ['jira-config'],
+    queryFn: getJiraConfig,
   })
 
   const accounts = accountsData?.data?.items || []
@@ -233,19 +238,20 @@ export default function Findings() {
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Account</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Region</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Rule</th>
+              <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">JIRA</th>
               <th className="text-left px-4 py-3 text-sm font-medium text-gray-500"></th>
             </tr>
           </thead>
           <tbody className="divide-y">
             {isLoading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                   Loading...
                 </td>
               </tr>
             ) : findings.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                   No findings found
                 </td>
               </tr>
@@ -274,6 +280,21 @@ export default function Findings() {
                   <td className="px-4 py-3 text-sm">{finding.account_id}</td>
                   <td className="px-4 py-3 text-sm">{finding.region}</td>
                   <td className="px-4 py-3 text-sm">{finding.rule?.name || 'N/A'}</td>
+                  <td className="px-4 py-3 text-sm">
+                    {finding.jira_ticket_key && jiraConfig?.data?.base_url ? (
+                      <a
+                        href={`${jiraConfig.data.base_url}/browse/${finding.jira_ticket_key}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800"
+                      >
+                        {finding.jira_ticket_key}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <Link
                       to={`/findings/${finding.id}`}

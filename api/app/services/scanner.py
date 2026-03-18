@@ -17,8 +17,12 @@ from app.services.rules import RULE_REGISTRY
 from app.services.cache import invalidate_pattern, CACHE_RULES, CACHE_FINDINGS, CACHE_SUMMARY
 from app.services.fetchers.base import ResourceCache, FetchedResource
 from app.services.fetchers import get_fetcher_for_resource_type, FETCHER_REGISTRY
-from app.services.notifications.slack import send_slack_notification, get_slack_config, SlackNotifier
-from app.services.notifications.jira import send_jira_notifications, get_jira_ticket_url, get_jira_config
+from app.services.notifications.slack import SlackNotifier
+from app.services.notifications.jira import send_jira_notifications, get_jira_ticket_url
+from app.services.integration_config import (
+    get_slack_config,
+    get_jira_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -739,55 +743,63 @@ async def send_finding_notifications(
     jira_tickets_created = 0
     jira_ticket_urls = []
     jira_ticket_map = {}  # finding_id -> ticket_url
-    jira_config = None
 
-    try:
-        # Build rule descriptions dict from findings
-        rule_descriptions = {}
-        for finding in new_findings + regression_findings:
-            rule_id = finding.get("rule_id")
-            if rule_id and rule_id not in rule_descriptions:
-                rule_descriptions[rule_id] = finding.get("rule_description", "")
+    # Get JIRA config (includes is_enabled from DB and settings from env > DB)
+    jira_config = await get_jira_config()
 
-        jira_tickets_created, jira_results = await send_jira_notifications(
-            new_findings=new_findings,
-            regression_findings=regression_findings,
-            rule_descriptions=rule_descriptions,
-        )
-        if jira_tickets_created > 0:
-            logger.info(f"Created {jira_tickets_created} JIRA tickets for scan {scan_id}")
-            # Build ticket URL map for Slack notifications
-            jira_config = await get_jira_config()
-            if jira_config and jira_config.base_url:
+    if not jira_config.is_enabled:
+        logger.debug("JIRA integration disabled via UI toggle")
+    elif not jira_config.is_configured:
+        logger.debug("JIRA integration not configured (missing env vars)")
+    else:
+        try:
+            # Build rule descriptions dict from findings
+            rule_descriptions = {}
+            for finding in new_findings + regression_findings:
+                rule_id = finding.get("rule_id")
+                if rule_id and rule_id not in rule_descriptions:
+                    rule_descriptions[rule_id] = finding.get("rule_description", "")
+
+            jira_tickets_created, jira_results = await send_jira_notifications(
+                new_findings=new_findings,
+                regression_findings=regression_findings,
+                rule_descriptions=rule_descriptions,
+            )
+            if jira_tickets_created > 0:
+                logger.info(f"Created {jira_tickets_created} JIRA tickets for scan {scan_id}")
+                # Build ticket URL map for Slack notifications
                 for r in jira_results:
                     if r.success and r.issue_key:
                         url = get_jira_ticket_url(jira_config.base_url, r.issue_key)
                         jira_ticket_urls.append(url)
                         jira_ticket_map[r.finding_id] = url
 
-            # Store ticket keys back to findings in database
-            await _store_jira_ticket_keys(jira_results)
-    except Exception as e:
-        logger.error(f"Failed to create JIRA tickets: {e}", exc_info=True)
+                # Store ticket keys back to findings in database
+                await _store_jira_ticket_keys(jira_results)
+        except Exception as e:
+            logger.error(f"Failed to create JIRA tickets: {e}", exc_info=True)
 
-    # Get Slack config
-    config = await get_slack_config()
-    webhook_url = os.environ.get("SLACK_WEBHOOK_URL")
+    # Get Slack config (includes is_enabled from DB and settings from env > DB)
+    slack_config = await get_slack_config()
 
-    if not config or not config.is_enabled or not webhook_url:
-        logger.debug("Slack notifications not configured or disabled")
+    if not slack_config.is_enabled:
+        logger.debug("Slack integration disabled via UI toggle")
+        return
+
+    if not slack_config.is_configured:
+        logger.debug("Slack not configured (missing SLACK_WEBHOOK_URL env var)")
         return
 
     notifier = SlackNotifier(
-        webhook_url=webhook_url,
-        min_severity=config.min_severity
+        webhook_url=slack_config.webhook_url,
+        min_severity=slack_config.min_severity
     )
 
     # Send individual notifications for critical/high severity findings
     notifications_sent = 0
 
     # Notify on new findings
-    if config.notify_on_new_findings:
+    if slack_config.notify_on_new_findings:
         for finding in new_findings:
             if notifier.should_notify(finding["rule_severity"]):
                 try:
@@ -809,7 +821,7 @@ async def send_finding_notifications(
                     logger.error(f"Failed to send notification for new finding: {e}")
 
     # Notify on regressions
-    if config.notify_on_regression:
+    if slack_config.notify_on_regression:
         for finding in regression_findings:
             if notifier.should_notify(finding["rule_severity"]):
                 try:
@@ -831,7 +843,7 @@ async def send_finding_notifications(
                     logger.error(f"Failed to send notification for regression: {e}")
 
     # Send summary notification only if the user has enabled it
-    notify_on_complete = getattr(config, 'notify_on_scan_complete', True)
+    notify_on_complete = slack_config.notify_on_scan_complete
     logger.info(f"Scan summary check: notify_on_complete={notify_on_complete}, notifications_sent={notifications_sent}")
 
     if notify_on_complete:
